@@ -1,123 +1,108 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import Controls from "./components/Controls/Controls";
-import CatImage from "./components/CatImage/CatImage";
-import LoadingSpinner from "./components/LoadingSpinner/LoadingSpinner";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
+import Controls from "./components/Controls/Controls";
+import GetCatButton from "./components/GetCatButton/GetCatButton";
+import CatImageDisplay from "./components/CatImageDisplay/CatImageDisplay";
 
 const API_URL = "https://api.thecatapi.com/v1/images/search";
 
 function App() {
-  const [imageUrl, setImageUrl] = useState("");
   const [isEnabled, setIsEnabled] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(false);
+  const [catImageUrl, setCatImageUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   const intervalRef = useRef(null);
 
-  const fetchCatImage = useCallback(async () => {
+  const fetchCatImage = async () => {
     if (!isEnabled) return;
 
     setIsLoading(true);
-    setError(null);
-    console.log("Fetching new cat image...");
-
     try {
       const response = await fetch(API_URL);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      if (data && data.length > 0 && data[0].url) {
-        setImageUrl(data[0].url);
+      if (data && data.length > 0) {
+        setCatImageUrl(data[0].url);
       } else {
-        throw new Error("No image URL found in API response");
+        setCatImageUrl(null);
       }
-    } catch (e) {
-      console.error("Failed to fetch cat image:", e);
-      setError("Не удалось загрузить изображение. Попробуйте еще раз.");
-      setImageUrl("");
+    } catch (error) {
+      console.error("Failed to fetch cat image:", error);
+      setCatImageUrl(null);
     } finally {
       setIsLoading(false);
     }
-  }, [isEnabled]);
+  };
+
+  const resetAutoRefreshTimer = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    if (isEnabled && isAutoRefreshEnabled) {
+      intervalRef.current = setInterval(() => {
+        fetchCatImage();
+      }, 5000);
+    } else {
+      intervalRef.current = null;
+    }
+  };
 
   useEffect(() => {
     if (isEnabled) {
       fetchCatImage();
     } else {
-      setImageUrl("");
-    }
-  }, [fetchCatImage, isEnabled]);
-
-  useEffect(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-      console.log("Cleared interval");
+      setCatImageUrl(null);
     }
 
-    if (autoRefresh && isEnabled) {
-      console.log("Setting up interval...");
-      intervalRef.current = setInterval(() => {
-        console.log("Interval fetch triggered");
-        fetchCatImage();
-      }, 5000);
-    }
+    resetAutoRefreshTimer();
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
-        intervalRef.current = null;
-        console.log("Cleaned up interval on effect change/unmount");
       }
     };
-  }, [autoRefresh, isEnabled, fetchCatImage]);
+  }, [isEnabled, isAutoRefreshEnabled]);
 
   const handleGetCatClick = () => {
-    if (!isLoading) {
-      fetchCatImage();
+    fetchCatImage();
+    resetAutoRefreshTimer();
+  };
+
+  const handleToggleEnabled = () => {
+    setIsEnabled(!isEnabled);
+    if (isEnabled) {
+      setIsAutoRefreshEnabled(false);
     }
   };
 
-  const handleEnableToggle = (event) => {
-    const checked = event.target.checked;
-    setIsEnabled(checked);
-    if (!checked) {
-      setIsLoading(false);
-      setError(null);
-    } else {
-      if (!imageUrl && !isLoading) {
-        fetchCatImage();
-      }
-    }
-  };
-
-  const handleAutoRefreshToggle = (event) => {
-    setAutoRefresh(event.target.checked);
+  const handleToggleAutoRefresh = () => {
+    setIsAutoRefreshEnabled(!isAutoRefreshEnabled);
   };
 
   return (
     <div className="app-container">
-      <h1>Котики!</h1>
-      <Controls
-        isEnabled={isEnabled}
-        autoRefresh={autoRefresh}
-        onEnableToggle={handleEnableToggle}
-        onAutoRefreshToggle={handleAutoRefreshToggle}
-        onGetCatClick={handleGetCatClick}
-        isLoading={isLoading}
-      />
-      <div className="image-area">
-        {isLoading && <LoadingSpinner />}
-        {error && !isLoading && <p className="error-message">{error}</p>}
-        {!isLoading && !error && imageUrl && (
-          <CatImage src={imageUrl} alt="A cute cat" />
+      <div className="content-wrapper">
+        <h1>Random Cat Image</h1>
+        <Controls
+          isEnabled={isEnabled}
+          isAutoRefreshEnabled={isAutoRefreshEnabled}
+          onToggleEnabled={handleToggleEnabled}
+          onToggleAutoRefresh={handleToggleAutoRefresh}
+        />
+        <GetCatButton
+          onClick={handleGetCatClick}
+          disabled={!isEnabled || isLoading}
+          isLoading={isLoading}
+        />
+        {isEnabled ? (
+          <CatImageDisplay imageUrl={catImageUrl} isLoading={isLoading} />
+        ) : (
+          <p>Image fetching is disabled.</p>
         )}
-        {!isLoading && !error && !imageUrl && isEnabled && (
-          <p>Нажмите "Get Cat", чтобы увидеть котика!</p>
-        )}
-        {!isLoading && !isEnabled && <p>Получение котиков отключено.</p>}
       </div>
     </div>
   );
