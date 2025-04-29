@@ -87,17 +87,19 @@ function App() {
     <div className="app-container">
       <div className="content-wrapper">
         <h1>Random Cat Image</h1>
-        <Controls
-          isEnabled={isEnabled}
-          isAutoRefreshEnabled={isAutoRefreshEnabled}
-          onToggleEnabled={handleToggleEnabled}
-          onToggleAutoRefresh={handleToggleAutoRefresh}
-        />
-        <GetCatButton
-          onClick={handleGetCatClick}
-          disabled={!isEnabled || isLoading}
-          isLoading={isLoading}
-        />
+        <div className="controls-button-wrapper">
+          <Controls
+            isEnabled={isEnabled}
+            isAutoRefreshEnabled={isAutoRefreshEnabled}
+            onToggleEnabled={handleToggleEnabled}
+            onToggleAutoRefresh={handleToggleAutoRefresh}
+          />
+          <GetCatButton
+            onClick={handleGetCatClick}
+            disabled={!isEnabled || isLoading}
+            isLoading={isLoading}
+          />
+        </div>
         {isEnabled ? (
           <CatImageDisplay imageUrl={catImageUrl} isLoading={isLoading} />
         ) : (

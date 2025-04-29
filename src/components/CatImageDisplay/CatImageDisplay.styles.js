@@ -9,20 +9,24 @@ export const ImageContainer = styled.div`
   border-radius: 4px;
   background-color: #eee;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 200px; 
-  box-sizing: border-box; 
+  min-height: 300px;
+  box-sizing: border-box;
+  overflow: hidden; 
 `;
 
 export const CatImage = styled.img`
   display: block;
   max-width: 100%;
-  height: auto;
+  height: auto; 
   border-radius: 4px;
 `;
 
 export const Placeholder = styled.div`
   font-size: 1.2rem;
   color: #555;
+  text-align: center;
+  padding: 20px; 
 `;
